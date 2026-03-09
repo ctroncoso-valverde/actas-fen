@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de Actas · FEN-UNAB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--navy:#1C3461;--navy-light:#2A4A7F;--navy-dark:#0F1F3D;--gold:#C5942A;--gold-light:#F0D98A;--cream:#F5F2EB;--cream-dark:#EDE9DF;--ink:#1A1814;--muted:#766F63;--border:#DDD9CF;--white:#FFFFFF;--green:#2D6A4F;--green-light:#F0F9F4;--red:#991B1B;--red-light:#FEF2F2;--shadow-sm:0 1px 4px rgba(28,52,97,0.08);--shadow-md:0 4px 20px rgba(28,52,97,0.12);--shadow-lg:0 8px 40px rgba(28,52,97,0.18);--radius:10px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.6;}
+nav{background:var(--navy-dark);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.3);}
+.nav-brand{display:flex;align-items:center;gap:12px;}
+.nav-logo{width:32px;height:32px;border-radius:6px;background:var(--navy-light);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.nav-title{font-size:15px;font-weight:600;color:#fff;}
+.nav-sub{font-size:10px;color:#8FA8D3;letter-spacing:1.5px;text-transform:uppercase;}
+.nav-actions{display:flex;align-items:center;gap:8px;}
+.btn-nav{font-size:12px;color:#8FA8D3;background:transparent;border:1px solid #3A5A90;border-radius:6px;padding:5px 12px;cursor:pointer;font-family:inherit;transition:all 0.2s;white-space:nowrap;}
+.btn-nav:hover{color:#fff;border-color:#6A9AD0;}
+.api-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;}
+.api-dot.ok{background:#4CAF50;box-shadow:0 0 6px rgba(76,175,80,0.6);}
+.api-dot.miss{background:#EF5350;box-shadow:0 0 6px rgba(239,83,80,0.6);}
+.progress-bar{background:var(--white);border-bottom:1px solid var(--border);padding:10px 28px;display:flex;gap:0;align-items:center;}
+.progress-step{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);padding:4px 16px 4px 0;}
+.progress-step.active{color:var(--navy);font-weight:600;}
+.progress-step.done{color:var(--green);}
+.step-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:var(--cream-dark);color:var(--muted);transition:all 0.3s;}
+.progress-step.active .step-dot{background:var(--navy);color:#fff;}
+.progress-step.done .step-dot{background:var(--green);color:#fff;}
+.step-arrow{color:var(--border);font-size:14px;margin-right:16px;}
+.container{max-width:780px;margin:0 auto;padding:28px 20px 60px;}
+.card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);padding:22px 24px;box-shadow:var(--shadow-sm);margin-bottom:16px;animation:fadeUp 0.3s ease both;}
+.card-title{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+label.field-label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:500;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+input[type="text"],input[type="date"],input[type="password"],input[type="search"],select,textarea{width:100%;border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;transition:border-color 0.2s,box-shadow 0.2s;-webkit-appearance:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(28,52,97,0.08);}
+textarea{resize:vertical;line-height:1.6;}
+.upload-zone{border:2px dashed var(--border);border-radius:8px;padding:18px;cursor:pointer;text-align:center;transition:all 0.2s;background:#FDFCFA;}
+.upload-zone:hover{border-color:var(--navy-light);background:#F5F8FF;}
+.upload-zone.has-image{border-style:solid;border-color:var(--green);background:var(--green-light);}
+.upload-zone input{display:none;}
+.upload-preview{display:flex;align-items:center;gap:12px;text-align:left;}
+.upload-preview img{width:56px;height:56px;object-fit:cover;border-radius:5px;border:1px solid var(--border);}
+.upload-icon{font-size:28px;display:block;margin-bottom:6px;}
+.folder-badge{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--cream);font-size:13px;margin-top:10px;}
+.folder-badge.connected{border-color:var(--green);background:var(--green-light);}
+.folder-path{font-family:'Courier New',monospace;font-size:12px;color:var(--navy);font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;border:none;transition:all 0.2s;}
+.btn-primary{background:var(--navy);color:#fff;width:100%;box-shadow:0 2px 8px rgba(28,52,97,0.25);}
+.btn-primary:hover:not(:disabled){background:var(--navy-light);transform:translateY(-1px);}
+.btn-primary:disabled{background:#B0B8CC;cursor:not-allowed;transform:none;}
+.btn-save{background:var(--green);color:#fff;}
+.btn-save:hover{background:#245A42;transform:translateY(-1px);}
+.btn-excel{background:#1D6F42;color:#fff;}
+.btn-excel:hover{background:#165C37;transform:translateY(-1px);}
+.btn-word{background:#2B5797;color:#fff;}
+.btn-word:hover{background:#1E3E6E;transform:translateY(-1px);}
+.btn-outline{background:var(--white);color:var(--ink);border:1px solid var(--border);}
+.btn-outline:hover{background:var(--cream);}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);font-size:13px;padding:9px 16px;}
+.btn-ghost:hover{background:var(--cream);}
+.btn-ghost.copied{background:var(--green);color:#fff;border-color:var(--green);}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.action-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.action-row .btn{flex:1;min-width:130px;}
+.alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:14px;animation:fadeUp 0.3s ease;}
+.alert-error{background:var(--red-light);border:1px solid #FECACA;color:var(--red);}
+.alert-success{background:var(--green-light);border:1px solid #A7F3D0;color:var(--green);}
+.alert-info{background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;}
+.spinner{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:spin 0.75s linear infinite;}
+.acta-doc{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow-md);padding:44px 50px;font-family:'Crimson Pro',serif;font-size:15px;line-height:1.75;animation:fadeUp 0.4s ease;}
+.acta-header{text-align:center;border-bottom:2px solid var(--navy);padding-bottom:20px;margin-bottom:26px;}
+.acta-institution{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;font-family:'DM Sans',sans-serif;margin-bottom:10px;}
+.acta-title{font-size:22px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+.acta-comite{font-size:16px;font-weight:600;color:var(--navy);margin-bottom:8px;}
+.acta-meta{font-size:13px;color:var(--muted);font-family:'DM Sans',sans-serif;}
+.acta-section-title{font-size:12px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:1.5px;font-family:'DM Sans',sans-serif;margin-bottom:10px;margin-top:22px;}
+.acta-asistentes ul{list-style:none;columns:2;gap:20px;padding:0;}
+.acta-asistentes li{font-size:15px;color:var(--ink);padding:2px 0;}
+.acta-asistentes li::before{content:'·  ';color:var(--gold);font-weight:700;}
+.acta-tema{margin-bottom:20px;}
+.acta-tema-title{font-size:15px;font-weight:700;color:var(--navy);font-family:'DM Sans',sans-serif;margin-bottom:8px;display:flex;align-items:baseline;gap:8px;}
+.acta-tema-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:11px;font-weight:700;flex-shrink:0;position:relative;top:-1px;}
+.acta-tema ul{list-style:disc;padding-left:22px;}
+.acta-tema li{margin-bottom:3px;}
+.acta-tareas{margin-top:26px;background:#FFFBF0;border:1px solid var(--gold-light);border-radius:8px;padding:18px 22px;}
+.acta-tareas-title{font-size:11px;font-weight:700;color:#8A6A00;text-transform:uppercase;letter-spacing:1.5px;font-family:'DM Sans',sans-serif;margin-bottom:12px;}
+.acta-tareas ol{padding-left:22px;}
+.acta-tareas li{margin-bottom:6px;}
+.acta-footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:#C0BBB0;font-family:'DM Sans',sans-serif;}
+.search-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.search-row input[type="search"]{flex:1;min-width:200px;}
+.search-row select{width:220px;}
+.history-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.stat-box{background:var(--white);border-radius:8px;padding:14px 16px;text-align:center;border:1px solid var(--border);}
+.stat-num{font-size:26px;font-weight:700;color:var(--navy);font-family:'Crimson Pro',serif;}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+.history-list{display:flex;flex-direction:column;gap:8px;}
+.history-item{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:all 0.15s;background:var(--white);}
+.history-item:hover{border-color:var(--navy-light);background:#F5F8FF;}
+.history-item-comite{font-weight:600;color:var(--navy);font-size:14px;}
+.history-item-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.history-item-preview{font-size:12px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px;}
+.history-item-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:12px;}
+.history-empty{font-size:13px;color:var(--muted);text-align:center;padding:36px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.modal-overlay{position:fixed;inset:0;background:rgba(10,18,35,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s ease;backdrop-filter:blur(4px);}
+.modal{background:var(--white);border-radius:14px;padding:36px 40px;max-width:460px;width:90%;box-shadow:var(--shadow-lg);animation:slideUp 0.3s ease;}
+.modal-title{font-size:20px;font-weight:700;color:var(--navy);margin-bottom:6px;font-family:'Crimson Pro',serif;}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6;}
+.modal-input-row{display:flex;gap:10px;}
+.modal-input-row input{flex:1;}
+.modal-hint{font-size:11px;color:var(--muted);margin-top:10px;}
+.modal-hint a{color:var(--navy);}
+.filename-preview{background:var(--cream);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--muted);font-family:'Courier New',monospace;margin-top:10px;display:flex;align-items:center;gap:8px;border:1px solid var(--border);}
+.filename-preview span{color:var(--navy);font-weight:600;}
+.or-sep{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:16px 0;}
+.or-sep::before,.or-sep::after{content:'';flex:1;height:1px;background:var(--border);}
+code{background:var(--cream);padding:2px 6px;border-radius:4px;font-size:12px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@media(max-width:600px){.acta-doc{padding:26px 22px;}.acta-asistentes ul{columns:1;}.grid-3{grid-template-columns:1fr;}.action-row .btn{min-width:0;}.history-stats{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">📋</div>
+    <div><div class="nav-sub">FEN · UNAB</div><div class="nav-title">Generador de Actas</div></div>
+  </div>
+  <div class="nav-actions">
+    <span id="apiStatus"></span>
+    <button class="btn-nav" onclick="showTab('history')">📁 Historial</button>
+    <button class="btn-nav" onclick="openApiModal()">⚙ API Key</button>
+    <button class="btn-nav" id="btnNueva" onclick="showTab('form')" style="display:none">← Nueva acta</button>
+  </div>
+</nav>
+
+<div class="progress-bar">
+  <div class="progress-step active" id="pi-form"><div class="step-dot">1</div> Ingresar notas</div>
+  <span class="step-arrow">›</span>
+  <div class="progress-step" id="pi-preview"><div class="step-dot">2</div> Revisar y exportar</div>
+  <span class="step-arrow">›</span>
+  <div class="progress-step" id="pi-history"><div class="step-dot">3</div> Historial &amp; Consulta</div>
+</div>
+
+<div class="container">
+
+  <!-- PANEL 1: FORMULARIO -->
+  <div id="panelForm">
+    <div class="card">
+      <div class="card-title">Identificación de la sesión</div>
+      <div class="grid-3" style="margin-bottom:14px">
+        <div>
+          <label class="field-label">Comité / Instancia</label>
+          <select id="selectComite" onchange="updateComiteCustom();updateFilename()">
+            <option>Comité Ejecutivo FEN</option>
+            <option>Comité de Calidad (CGCA-FEN)</option>
+            <option>Comité Directivo</option>
+            <option>Consejo de Facultad</option>
+            <option>Consejo de Carrera</option>
+            <option>Comité Curricular</option>
+            <option>Comité de Titulación</option>
+            <option value="otro">Otro…</option>
+          </select>
+        </div>
+        <div id="customWrap" style="display:none">
+          <label class="field-label">Nombre del comité</label>
+          <input type="text" id="customComite" placeholder="Ej: Comité de Posgrados" oninput="updateFilename()">
+        </div>
+        <div>
+          <label class="field-label">Fecha</label>
+          <input type="date" id="inputFecha" oninput="updateFilename()">
+        </div>
+        <div>
+          <label class="field-label">Hora de inicio</label>
+          <input type="text" id="inputHora" placeholder="Ej: 10:00 am">
+        </div>
+      </div>
+      <div class="filename-preview">📄 <span id="filenameText">…</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Notas de la reunión</div>
+      <label class="field-label">Texto libre — apuntes, OCR, bullets, cualquier formato</label>
+      <textarea id="inputNotas" rows="10" placeholder="Pega tus apuntes directamente. No importa el formato. Por ejemplo:
+
+- Decano presentó diagnóstico estratégico FEN 2026
+- Ratio prof/alumno actual 1:220, meta 1:50
+- Reunión con Comité Rectoría aplazada hasta revisar sello FEN
+- ECA informa coordinaciones SII para Renta 2026
+- IPE organiza workshop 17-18 marzo, Diego Restuccia (UofT)
+- Tareas: Luis Felipe evalúa llegada de Atkinson; Mary-Ann invita a desayuno
+
+Claude estructurará esto en acta formal."></textarea>
+      <div class="or-sep">o subir imagen de tus apuntes</div>
+      <label class="upload-zone" id="uploadZone" for="inputImagen">
+        <input type="file" id="inputImagen" accept="image/*" onchange="handleImageUpload(event)">
+        <div id="uploadContent">
+          <span class="upload-icon">📷</span>
+          <div style="font-size:13px;color:var(--muted)">Foto de apuntes manuscritos, tabla de agenda, captura</div>
+          <div style="font-size:11px;color:#AAA;margin-top:4px">JPG, PNG · click o arrastra aquí</div>
+        </div>
+      </label>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Carpeta de destino (OneDrive local)</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Conecta tu carpeta <code>actas/</code> de OneDrive para guardar directamente (Chrome / Edge).</p>
+      <button class="btn btn-outline btn-sm" onclick="selectFolder()" style="display:inline-flex">📁 &nbsp;Seleccionar carpeta…</button>
+      <div id="folderBadge" class="folder-badge" style="display:none">
+        <span style="font-size:18px">📂</span>
+        <div style="flex:1;overflow:hidden">
+          <div class="folder-path" id="folderPath"></div>
+          <div style="font-size:11px;color:var(--muted)" id="folderStatus">Carpeta conectada</div>
+        </div>
+        <button class="btn-nav btn-sm" onclick="selectFolder()">Cambiar</button>
+      </div>
+      <p id="folderNoSupport" style="display:none;font-size:12px;color:#AA6600;margin-top:10px;padding:10px;background:#FFFBF0;border-radius:6px;border:1px solid var(--gold-light)">⚠ Tu navegador no soporta guardado directo. Requiere Chrome o Edge.</p>
+    </div>
+
+    <div id="errorBox" class="alert alert-error" style="display:none"></div>
+    <button class="btn btn-primary" id="btnGenerar" onclick="generarActa()">✨ &nbsp;Generar Acta</button>
+  </div>
+
+  <!-- PANEL 2: PREVIEW -->
+  <div id="panelPreview" style="display:none">
+    <div id="saveAlert" class="alert" style="display:none"></div>
+    <div class="action-row">
+      <button class="btn btn-save" onclick="saveToFolder()" title="Guarda .doc directamente en carpeta OneDrive conectada">💾 &nbsp;Guardar Word</button>
+      <button class="btn btn-excel" onclick="downloadExcel()" title="Genera .xlsx con Tabla + Acuerdos y Tareas">📊 &nbsp;Exportar Excel</button>
+      <button class="btn btn-word" onclick="downloadWord()" title="Descarga solo el .doc">📄 &nbsp;Solo Word</button>
+      <button class="btn btn-ghost" id="btnCopiar" onclick="copyActaText()">📋 &nbsp;Copiar</button>
+    </div>
+    <div id="actaPreview"></div>
+    <p style="text-align:center;font-size:12px;color:#AAA;margin-top:16px">
+      <a href="#" onclick="showTab('form');return false;" style="color:var(--navy)">← Regresar para regenerar</a>
+      &nbsp;·&nbsp;
+      <a href="#" onclick="showTab('history');return false;" style="color:var(--navy)">Ver historial →</a>
+    </p>
+  </div>
+
+  <!-- PANEL 3: HISTORIAL -->
+  <div id="panelHistory" style="display:none">
+    <div id="historyStats" class="history-stats"></div>
+    <div class="card">
+      <div class="card-title">Buscar en actas guardadas</div>
+      <div class="search-row">
+        <input type="search" id="searchQuery" placeholder="Buscar por tema, nombre, acuerdo…" oninput="renderHistory()">
+        <select id="filterComite" onchange="renderHistory()">
+          <option value="">Todos los comités</option>
+          <option>Comité Ejecutivo FEN</option>
+          <option>Comité de Calidad (CGCA-FEN)</option>
+          <option>Comité Directivo</option>
+          <option>Consejo de Facultad</option>
+          <option>Consejo de Carrera</option>
+          <option>Comité Curricular</option>
+          <option>Comité de Titulación</option>
+        </select>
+      </div>
+      <div id="historyList" class="history-list"></div>
+    </div>
+    <div style="text-align:center;margin-top:8px">
+      <button class="btn btn-ghost btn-sm" onclick="clearHistory()" style="color:#EF5350;border-color:#FECACA;font-size:12px">🗑 Borrar todo el historial</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL API KEY -->
+<div id="modalOverlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title">API Key de Anthropic</div>
+    <div class="modal-sub">Ingresa tu clave para que la app genere actas con Claude.<br>Se guarda solo en tu navegador local — no sale de tu computador.</div>
+    <div class="modal-input-row">
+      <input type="password" id="modalApiInput" placeholder="sk-ant-api03-…" autocomplete="off">
+      <button class="btn btn-primary" style="width:auto;padding:9px 18px" onclick="saveApiKey()">Guardar</button>
+    </div>
+    <div class="modal-hint">Obtén tu key en <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
+  </div>
+</div>
+
+<script>
+// ═══ STATE ═══
+let apiKey       = localStorage.getItem('fen_acta_apikey') || '';
+let imageBase64  = null;
+let imageMime    = null;
+let currentActa  = null;
+let folderHandle = null;
+const FSA         = 'showDirectoryPicker' in window;
+const HIST_KEY    = 'fen_actas_v2';
+
+// ═══ PERSISTENCE ═══
+function loadHistory(){try{return JSON.parse(localStorage.getItem(HIST_KEY)||'[]');}catch(e){return[];}}
+function saveHistory(arr){try{localStorage.setItem(HIST_KEY,JSON.stringify(arr.slice(0,300)));}catch(e){console.warn('Storage full',e);}}
+function addToHistory(acta){
+  const h=loadHistory();
+  const idx=h.findIndex(a=>a.comite===acta.comite&&a.fecha_iso===acta.fecha_iso);
+  if(idx>=0)h.splice(idx,1);
+  h.unshift({...acta,_ts:Date.now()});
+  saveHistory(h);
+}
+
+// ═══ INIT ═══
+window.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('inputFecha').value=new Date().toISOString().split('T')[0];
+  updateFilename(); updateApiStatus();
+  if(!FSA)document.getElementById('folderNoSupport').style.display='block';
+  if(!apiKey)setTimeout(openApiModal,700);
+  const z=document.getElementById('uploadZone');
+  z.addEventListener('dragover',e=>{e.preventDefault();z.style.background='#F0F6FF';});
+  z.addEventListener('dragleave',()=>{z.style.background='';});
+  z.addEventListener('drop',e=>{e.preventDefault();z.style.background='';const f=e.dataTransfer.files[0];if(f)processImageFile(f);});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+  document.getElementById('modalApiInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveApiKey();});
+});
+
+// ═══ API KEY ═══
+function openApiModal(){document.getElementById('modalApiInput').value=apiKey;document.getElementById('modalOverlay').style.display='flex';setTimeout(()=>document.getElementById('modalApiInput').focus(),100);}
+function closeModal(){document.getElementById('modalOverlay').style.display='none';}
+function saveApiKey(){const v=document.getElementById('modalApiInput').value.trim();if(!v)return;apiKey=v;localStorage.setItem('fen_acta_apikey',v);updateApiStatus();closeModal();}
+function updateApiStatus(){const el=document.getElementById('apiStatus');el.innerHTML=apiKey?`<span class="api-dot ok"></span><span style="font-size:11px;color:#8FA8D3">API ok</span>`:`<span class="api-dot miss"></span><span style="font-size:11px;color:#EF9090">Sin key</span>`;}
+
+// ═══ FOLDER ═══
+async function selectFolder(){
+  if(!FSA)return;
+  try{
+    folderHandle=await window.showDirectoryPicker({mode:'readwrite',startIn:'documents'});
+    document.getElementById('folderPath').textContent=folderHandle.name;
+    document.getElementById('folderStatus').textContent='Carpeta conectada — archivos se guardarán aquí';
+    const b=document.getElementById('folderBadge');b.style.display='flex';b.classList.add('connected');
+  }catch(e){if(e.name!=='AbortError')console.warn(e);}
+}
+
+// ═══ HELPERS ═══
+function slugify(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9\s\-]/g,'').replace(/\s+/g,'-');}
+function getComite(){const v=document.getElementById('selectComite').value;return v==='otro'?(document.getElementById('customComite').value.trim()||'Comité'):v;}
+function updateComiteCustom(){document.getElementById('customWrap').style.display=document.getElementById('selectComite').value==='otro'?'block':'none';updateFilename();}
+function updateFilename(){const f=document.getElementById('inputFecha').value||'YYYY-MM-DD';document.getElementById('filenameText').textContent=`${f}_${slugify(getComite())}_Acta.doc`;}
+function getBaseFilename(){return`${document.getElementById('inputFecha').value||'sin-fecha'}_${slugify(getComite())}`;}
+function fmtDate(d){if(!d)return'';const M=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];const[y,m,day]=d.split('-');return`${parseInt(day)} de ${M[parseInt(m)-1]} de ${y}`;}
+function isVal(v){return v&&v!=='null'&&v!==null&&v!=='';}
+
+// ═══ IMAGE ═══
+function handleImageUpload(e){const f=e.target.files[0];if(f)processImageFile(f);}
+function processImageFile(file){
+  const r=new FileReader();
+  r.onload=ev=>{
+    const url=ev.target.result;imageBase64=url.split(',')[1];imageMime=file.type||'image/jpeg';
+    const z=document.getElementById('uploadZone');z.classList.add('has-image');
+    document.getElementById('uploadContent').innerHTML=`<div class="upload-preview"><img src="${url}" alt=""><div><div style="font-size:13px;color:var(--green);font-weight:500">✓ ${file.name}</div><div style="font-size:11px;color:var(--muted)">Texto extraído por visión IA</div><div style="font-size:11px;color:var(--muted);margin-top:3px;cursor:pointer;text-decoration:underline" onclick="clearImage(event)">Quitar imagen</div></div></div>`;
+  };r.readAsDataURL(file);
+}
+function clearImage(e){
+  e.preventDefault();e.stopPropagation();imageBase64=null;imageMime=null;document.getElementById('inputImagen').value='';
+  const z=document.getElementById('uploadZone');z.classList.remove('has-image');
+  document.getElementById('uploadContent').innerHTML=`<span class="upload-icon">📷</span><div style="font-size:13px;color:var(--muted)">Foto de apuntes manuscritos o tabla de agenda</div><div style="font-size:11px;color:#AAA;margin-top:4px">JPG, PNG · click o arrastra aquí</div>`;
+}
+
+// ═══ GENERATE ═══
+async function generarActa(){
+  const notas=document.getElementById('inputNotas').value.trim();
+  const comite=getComite();
+  const fecha=document.getElementById('inputFecha').value;
+  const hora=document.getElementById('inputHora').value.trim();
+  if(!apiKey){showError('Configura tu API Key primero (botón ⚙).');openApiModal();return;}
+  if(!notas&&!imageBase64){showError('Ingresa notas de texto o sube una imagen de tus apuntes.');return;}
+  hideError();
+  const btn=document.getElementById('btnGenerar');
+  btn.disabled=true;btn.innerHTML=`<div class="spinner"></div>&nbsp; Generando acta…`;
+  const fechaLarga=fmtDate(fecha);
+  const sysPrompt=`Eres el secretario ejecutivo del ${comite}, Facultad de Economía y Negocios (FEN-UNAB), Chile. Genera actas formales. Responde ÚNICAMENTE con JSON válido, sin markdown.`;
+  const userPrompt=`Redacta el acta formal de la sesión del ${fechaLarga}${hora?` (inicio: ${hora})`:''}.\n\n${notas?`NOTAS:\n${notas}`:'Extrae toda la información del material visual adjunto.'}\n\nDevuelve SOLO este JSON:\n{"comite":"${comite}","fecha":"${fechaLarga}","fecha_iso":"${fecha}","hora_inicio":${hora?`"${hora}"`:'null'},"asistentes":["Nombre completo"],"temas":[{"numero":1,"titulo":"TÍTULO EN MAYÚSCULAS","puntos":["Punto formal, tercera persona, tiempo pasado."]}],"tareas_pendientes":[{"numero":1,"responsable":"Nombre Apellido","tarea":"Descripción de la tarea.","plazo":null}],"proxima_sesion":null}\n\nReglas: tercera persona, tiempo pasado, lenguaje institucional universitario chileno. Títulos en MAYÚSCULAS. [PENDIENTE] para datos desconocidos. Si no hay tareas: "tareas_pendientes":[].`;
+  try{
+    const content=imageBase64?[{type:'image',source:{type:'base64',media_type:imageMime,data:imageBase64}},{type:'text',text:userPrompt}]:userPrompt;
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-opus-4-5',max_tokens:2048,system:sysPrompt,messages:[{role:'user',content}]})});
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${res.status}`);}
+    const data=await res.json();
+    const raw=data.content.find(b=>b.type==='text')?.text||'';
+    currentActa=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    currentActa._baseFilename=getBaseFilename();
+    currentActa._ts=Date.now();
+    addToHistory(currentActa);
+    renderActa(currentActa);
+    showTab('preview');
+  }catch(err){showError(`Error al generar: ${err.message}`);}
+  finally{btn.disabled=false;btn.innerHTML='✨ &nbsp;Generar Acta';}
+}
+
+// ═══ RENDER ACTA ═══
+function renderActa(d){
+  const temas=d.temas.map(t=>`<div class="acta-tema"><div class="acta-tema-title"><span class="acta-tema-num">${t.numero}</span>${t.titulo}</div><ul>${t.puntos.map(p=>`<li>${p}</li>`).join('')}</ul></div>`).join('');
+  const tareas=d.tareas_pendientes?.length?`<div class="acta-tareas"><div class="acta-tareas-title">✅ &nbsp;Tareas Pendientes</div><ol>${d.tareas_pendientes.map(t=>`<li><strong>${t.responsable}:</strong> ${t.tarea}${isVal(t.plazo)?` <em style="color:var(--muted);font-size:13px;">(Plazo: ${t.plazo})</em>`:''}</li>`).join('')}</ol></div>`:'';
+  const proxima=isVal(d.proxima_sesion)?`<div style="margin-top:16px;font-size:13px;color:var(--muted);font-family:'DM Sans',sans-serif;text-align:center">📅 Próxima sesión: <strong style="color:var(--navy)">${d.proxima_sesion}</strong></div>`:'';
+  document.getElementById('actaPreview').innerHTML=`<div class="acta-doc"><div class="acta-header"><div class="acta-institution">Facultad de Economía y Negocios · Universidad Andrés Bello</div><div class="acta-title">ACTA DE SESIÓN</div><div class="acta-comite">${d.comite}</div><div class="acta-meta">${d.fecha}${d.hora_inicio?'  ·  Inicio: '+d.hora_inicio:''}</div></div><div class="acta-asistentes"><div class="acta-section-title">Asistentes</div><ul>${d.asistentes.map(a=>`<li>${a}</li>`).join('')}</ul></div><div style="margin-top:22px"><div class="acta-section-title">Desarrollo de la Sesión</div>${temas}</div>${tareas}${proxima}<div class="acta-footer">Generado el ${new Date().toLocaleDateString('es-CL')} · FEN-UNAB</div></div>`;
+}
+
+// ═══ WORD HTML ═══
+function buildWordHTML(d){
+  const temas=d.temas.map(t=>`<h2 style="font-size:13pt;font-weight:bold;color:#1C3461;margin:14pt 0 5pt;font-family:Calibri,sans-serif;">${t.numero}. ${t.titulo}</h2><ul style="margin:0 0 8pt 22pt;">${t.puntos.map(p=>`<li style="font-size:11pt;margin-bottom:3pt;font-family:Calibri,sans-serif;">${p}</li>`).join('')}</ul>`).join('');
+  const tareas=d.tareas_pendientes?.length?`<h2 style="font-size:13pt;font-weight:bold;color:#8A6A00;margin:20pt 0 6pt;padding-top:12pt;border-top:1px solid #E5CC70;font-family:Calibri,sans-serif;">TAREAS PENDIENTES</h2><ol style="margin:0 0 8pt 22pt;">${d.tareas_pendientes.map(t=>`<li style="font-size:11pt;margin-bottom:5pt;font-family:Calibri,sans-serif;"><strong>${t.responsable}:</strong> ${t.tarea}${isVal(t.plazo)?` <em>(Plazo: ${t.plazo})</em>`:''}</li>`).join('')}</ol>`:'';
+  const proxima=isVal(d.proxima_sesion)?`<p style="font-size:10pt;color:#777;text-align:center;margin-top:16pt;font-family:Calibri,sans-serif;">📅 Próxima sesión: <strong>${d.proxima_sesion}</strong></p>`:'';
+  return`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>body{font-family:Calibri,sans-serif;font-size:11pt;line-height:1.5;margin:2.5cm;color:#1A1814;}</style></head><body><div style="text-align:center;border-bottom:3px solid #1C3461;padding-bottom:14pt;margin-bottom:20pt;"><p style="font-size:9pt;color:#666;letter-spacing:1px;text-transform:uppercase;margin:0 0 6pt;font-family:Calibri,sans-serif;">Facultad de Economía y Negocios · Universidad Andrés Bello</p><h1 style="font-size:20pt;font-weight:bold;color:#1C3461;margin:0 0 5pt;font-family:Calibri,sans-serif;">ACTA DE SESIÓN</h1><h2 style="font-size:14pt;font-weight:600;color:#1C3461;margin:0 0 6pt;font-family:Calibri,sans-serif;">${d.comite}</h2><p style="font-size:10pt;color:#777;margin:0;font-family:Calibri,sans-serif;">Fecha: ${d.fecha}${d.hora_inicio?'  ·  Hora: '+d.hora_inicio:''}</p></div><h2 style="font-size:13pt;font-weight:bold;color:#1C3461;margin:0 0 6pt;font-family:Calibri,sans-serif;">ASISTENTES</h2><ul style="margin:0 0 14pt 22pt;">${d.asistentes.map(a=>`<li style="font-size:11pt;font-family:Calibri,sans-serif;">${a}</li>`).join('')}</ul><h2 style="font-size:13pt;font-weight:bold;color:#1C3461;margin:14pt 0 6pt;font-family:Calibri,sans-serif;">DESARROLLO DE LA SESIÓN</h2>${temas}${tareas}${proxima}<p style="font-size:9pt;color:#AAA;text-align:center;margin-top:40pt;font-family:Calibri,sans-serif;">Generado el ${new Date().toLocaleDateString('es-CL')} · FEN-UNAB</p></body></html>`;
+}
+
+// ═══ SAVE TO FOLDER ═══
+async function saveToFolder(){
+  if(!currentActa)return;
+  const fname=(currentActa._baseFilename||'Acta')+'.doc';
+  const blob=new Blob(['\ufeff',buildWordHTML(currentActa)],{type:'application/msword'});
+  if(FSA&&folderHandle){
+    try{const fh=await folderHandle.getFileHandle(fname,{create:true});const w=await fh.createWritable();await w.write(blob);await w.close();showSaveAlert('success',`✓ Guardado en carpeta: ${fname}`);return;}
+    catch(e){if(e.name==='NotAllowedError'){await selectFolder();if(folderHandle){saveToFolder();return;}}console.warn(e);}
+  }
+  if(FSA&&!folderHandle){showSaveAlert('info','Selecciona la carpeta OneDrive primero (en el formulario arriba).');return;}
+  downloadWord();showSaveAlert('info','Descargado. Muévelo a tu carpeta actas/ en OneDrive.');
+}
+
+// ═══ DOWNLOAD WORD ═══
+function downloadWord(){
+  if(!currentActa)return;
+  triggerDownload(new Blob(['\ufeff',buildWordHTML(currentActa)],{type:'application/msword'}),(currentActa._baseFilename||'Acta')+'.doc');
+}
+
+// ═══ DOWNLOAD EXCEL ═══
+function downloadExcel(actaOverride){
+  const d=actaOverride||currentActa;
+  if(!d)return;
+  const wb=XLSX.utils.book_new();
+
+  // — Hoja 1: TABLA —
+  const tablaRows=[
+    [`TABLA SESIÓN ${d.comite.toUpperCase()} · ${d.fecha.toUpperCase()}`],
+    [],
+    ['Comité', d.comite],
+    ['Fecha', d.fecha_iso||d.fecha],
+    ['Hora de inicio', d.hora_inicio||''],
+    ['Próxima sesión', isVal(d.proxima_sesion)?d.proxima_sesion:''],
+    [],
+    ['ASISTENTES'],
+    ...d.asistentes.map(a=>['', a]),
+    [],
+    ['N°','TEMA','PUNTOS PRINCIPALES'],
+    ...d.temas.map(t=>[t.numero, t.titulo, t.puntos.join('\n')])
+  ];
+  const wsTabla=XLSX.utils.aoa_to_sheet(tablaRows);
+  wsTabla['!cols']=[{wch:6},{wch:42},{wch:80}];
+  wsTabla['!merges']=[{s:{r:0,c:0},e:{r:0,c:2}}];
+  // Style header row (SheetJS basic)
+  if(wsTabla['A1'])wsTabla['A1'].s={font:{bold:true,sz:13},fill:{fgColor:{rgb:'1C3461'}}};
+  XLSX.utils.book_append_sheet(wb,wsTabla,'Tabla');
+
+  // — Hoja 2: ACUERDOS Y TAREAS —
+  const tareasRows=[
+    ['Acuerdos y Temas'],
+    [],
+    ['N°','RESPONSABLE','TAREA / ACUERDO','PLAZO','ESTADO','SESIÓN']
+  ];
+  if(d.tareas_pendientes?.length){
+    d.tareas_pendientes.forEach(t=>tareasRows.push([
+      t.numero, t.responsable, t.tarea,
+      isVal(t.plazo)?t.plazo:'',
+      'Pendiente',
+      `${d.comite} · ${d.fecha}`
+    ]));
+  } else {
+    tareasRows.push(['—','—','No se registraron tareas pendientes en esta sesión.','','',`${d.comite} · ${d.fecha}`]);
+  }
+  const wsTareas=XLSX.utils.aoa_to_sheet(tareasRows);
+  wsTareas['!cols']=[{wch:5},{wch:26},{wch:56},{wch:20},{wch:14},{wch:38}];
+  wsTareas['!merges']=[{s:{r:0,c:0},e:{r:0,c:5}}];
+  XLSX.utils.book_append_sheet(wb,wsTareas,'Acuerdos y Tareas');
+
+  const fname=(d._baseFilename||(slugify(d.comite)+'_'+(d.fecha_iso||'acta')))+'.xlsx';
+  XLSX.writeFile(wb,fname);
+  if(!actaOverride)showSaveAlert('success',`✓ Excel generado: ${fname} — hojas: Tabla + Acuerdos y Tareas`);
+}
+
+// ═══ COPY TEXT ═══
+function copyActaText(){
+  if(!currentActa)return;
+  const d=currentActa;
+  let t=`ACTA DE SESIÓN\n${d.comite.toUpperCase()}\nFecha: ${d.fecha}`;
+  if(d.hora_inicio)t+=`\nHora de inicio: ${d.hora_inicio}`;
+  t+=`\n\nASISTENTES:\n${d.asistentes.map(a=>'• '+a).join('\n')}\n\nDESARROLLO DE LA SESIÓN:`;
+  d.temas.forEach(tm=>{t+=`\n\n${tm.numero}. ${tm.titulo}\n${tm.puntos.map(p=>'• '+p).join('\n')}`;});
+  if(d.tareas_pendientes?.length)t+=`\n\nTAREAS PENDIENTES:\n${d.tareas_pendientes.map(tp=>`${tp.numero}. ${tp.responsable}: ${tp.tarea}${isVal(tp.plazo)?' (Plazo: '+tp.plazo+')':''}`).join('\n')}`;
+  navigator.clipboard.writeText(t).then(()=>{
+    const btn=document.getElementById('btnCopiar');btn.textContent='✓ Copiado';btn.classList.add('copied');
+    setTimeout(()=>{btn.innerHTML='📋 &nbsp;Copiar';btn.classList.remove('copied');},2200);
+  });
+}
+
+// ═══ TABS ═══
+function showTab(tab){
+  ['form','preview','history'].forEach(t=>{document.getElementById(`panel${t[0].toUpperCase()}${t.slice(1)}`).style.display=t===tab?'block':'none';});
+  document.getElementById('btnNueva').style.display=tab!=='form'?'inline-block':'none';
+  const order=['form','preview','history'];
+  order.forEach((t,i)=>{
+    const el=document.getElementById('pi-'+t);
+    const idx=order.indexOf(tab);
+    el.className='progress-step'+(t===tab?' active':i<idx?' done':'');
+    el.querySelector('.step-dot').textContent=i<idx?'✓':(i+1);
+  });
+  if(tab==='history')renderHistory();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ═══ RENDER HISTORY ═══
+function renderHistory(){
+  const history=loadHistory();
+  const query=(document.getElementById('searchQuery')?.value||'').toLowerCase().trim();
+  const fc=document.getElementById('filterComite')?.value||'';
+  const total=history.length;
+  const comites=[...new Set(history.map(a=>a.comite))];
+  const totalTareas=history.reduce((s,a)=>s+(a.tareas_pendientes?.length||0),0);
+  document.getElementById('historyStats').innerHTML=`
+    <div class="stat-box"><div class="stat-num">${total}</div><div class="stat-label">Actas guardadas</div></div>
+    <div class="stat-box"><div class="stat-num">${comites.length}</div><div class="stat-label">Comités</div></div>
+    <div class="stat-box"><div class="stat-num">${totalTareas}</div><div class="stat-label">Tareas registradas</div></div>`;
+  let filtered=history;
+  if(fc)filtered=filtered.filter(a=>a.comite===fc);
+  if(query)filtered=filtered.filter(a=>[a.comite,a.fecha,...(a.asistentes||[]),...(a.temas||[]).map(t=>t.titulo+' '+t.puntos.join(' ')),...(a.tareas_pendientes||[]).map(t=>t.responsable+' '+t.tarea)].join(' ').toLowerCase().includes(query));
+  const el=document.getElementById('historyList');
+  if(!filtered.length){
+    el.innerHTML=`<div class="history-empty"><div style="font-size:32px">📭</div><div>${query||fc?'No hay resultados para esta búsqueda.':'No hay actas guardadas aún.'}</div>${!query&&!fc?'<div style="font-size:12px">Las actas que generes se guardan aquí automáticamente.</div>':''}</div>`;
+    return;
+  }
+  el.innerHTML=filtered.map(a=>{
+    const realIdx=history.indexOf(a);
+    const preview=a.temas?.map(t=>t.titulo).join(' · ')||'';
+    const tc=a.tareas_pendientes?.length||0;
+    return`<div class="history-item" onclick="loadFromHistory(${realIdx})">
+      <div style="flex:1;min-width:0">
+        <div class="history-item-comite">${a.comite}</div>
+        <div class="history-item-meta">${a.fecha}${a.hora_inicio?' · '+a.hora_inicio:''} &nbsp;·&nbsp; ${a.asistentes?.length||0} asistentes &nbsp;·&nbsp; ${a.temas?.length||0} temas${tc?` &nbsp;·&nbsp; <strong style="color:var(--gold)">${tc} tarea${tc>1?'s':''}</strong>`:''}</div>
+        ${preview?`<div class="history-item-preview">${preview}</div>`:''}
+      </div>
+      <div class="history-item-actions">
+        <button class="btn btn-excel btn-sm" onclick="event.stopPropagation();downloadExcel(loadHistory()[${realIdx}])" title="Excel">📊</button>
+        <button class="btn btn-word btn-sm" onclick="event.stopPropagation();exportHWord(${realIdx})" title="Word">📄</button>
+        <button class="btn-nav btn-sm" onclick="event.stopPropagation();deleteFromHistory(${realIdx})" title="Eliminar" style="color:#EF9090;border-color:#FECACA">✕</button>
+        <span style="color:var(--muted);font-size:18px;margin-left:4px">›</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function loadFromHistory(i){const h=loadHistory();currentActa=h[i];renderActa(currentActa);showTab('preview');}
+function exportHWord(i){const h=loadHistory();const a=h[i];const fname=(a._baseFilename||(slugify(a.comite)+'_'+(a.fecha_iso||'acta')))+'.doc';triggerDownload(new Blob(['\ufeff',buildWordHTML(a)],{type:'application/msword'}),fname);}
+function deleteFromHistory(i){if(!confirm('¿Eliminar esta acta del historial?'))return;const h=loadHistory();h.splice(i,1);saveHistory(h);renderHistory();}
+function clearHistory(){if(!confirm('¿Borrar todo el historial? No se puede deshacer.'))return;localStorage.removeItem(HIST_KEY);renderHistory();}
+
+// ═══ UTILS ═══
+function triggerDownload(blob,filename){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);}
+function showSaveAlert(type,msg){const el=document.getElementById('saveAlert');el.className=`alert alert-${type}`;el.textContent=msg;el.style.display='block';if(type==='success')setTimeout(()=>el.style.display='none',5000);}
+function showError(msg){const el=document.getElementById('errorBox');el.textContent=msg;el.style.display='block';}
+function hideError(){document.getElementById('errorBox').style.display='none';}
+</script>
+</body>
+</html>
