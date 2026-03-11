@@ -1075,18 +1075,6 @@ if (puntos.length) {
       cell5.appendChild(doc.createElementNS(W,'w:p'));
     }
   }
-  // Keep T5 header row connected to content row
-var t5r0 = rows5[0];
-var t5p = t5r0.getElementsByTagNameNS(W, 'p')[0];
-if (t5p) {
-  var t5ppr = t5p.getElementsByTagNameNS(W, 'pPr')[0];
-  if (!t5ppr) {
-    t5ppr = doc.createElementNS(W, 'w:pPr');
-    t5p.insertBefore(t5ppr, t5p.firstChild);
-  }
-  var kwn = doc.createElementNS(W, 'w:keepWithNext');
-  t5ppr.appendChild(kwn);
-}
   t5.appendChild(dataRow5);
 
   // ── T6: Riesgos ──
