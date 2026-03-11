@@ -980,6 +980,18 @@ function fillTemplateXML(data, docXmlText){
   var seg=data.seguimiento_compromisos||[];
   if(seg.length){ seg.forEach(function(s){ t4.appendChild(makeRow(dr4,[s.accion||'',s.responsable||'',s.estado||''])); }); }
   else{ [0,1].forEach(function(){ t4.appendChild(makeRow(dr4,['','',''])); }); }
+  // Page break before T5
+var pbPara = doc.createElementNS(W, 'w:p');
+var pbPPr = doc.createElementNS(W, 'w:pPr');
+var pbRpr = doc.createElementNS(W, 'w:rPr');
+pbPPr.appendChild(pbRpr);
+pbPara.appendChild(pbPPr);
+var pbRun = doc.createElementNS(W, 'w:r');
+var pbBr = doc.createElementNS(W, 'w:br');
+pbBr.setAttribute('w:type', 'page');
+pbRun.appendChild(pbBr);
+pbPara.appendChild(pbRun);
+t5.parentNode.insertBefore(pbPara, t5);
 
   // ── T5: Desarrollo — 1 fila, 1 celda, múltiples párrafos (igual que template) ──
   var t5=tables[5]; var rows5=t5.getElementsByTagNameNS(W,'tr');
