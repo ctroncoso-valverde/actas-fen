@@ -987,6 +987,11 @@ function fillTemplateXML(data, docXmlText){
   while(rows5.length>1) t5.removeChild(rows5[rows5.length-1]);
   var dev=data.desarrollo||[];
   var dataRow5=dr5.cloneNode(true);
+  var clonedTrPr = dataRow5.getElementsByTagNameNS(W, 'trPr')[0];
+if (clonedTrPr) {
+  var trH = clonedTrPr.getElementsByTagNameNS(W, 'trHeight')[0];
+  if (trH) clonedTrPr.removeChild(trH);
+}
   var cells5=dataRow5.getElementsByTagNameNS(W,'tc');
   if(cells5.length){
     var cell5=cells5[0];
@@ -995,17 +1000,51 @@ function fillTemplateXML(data, docXmlText){
     while(ep5.length>0) cell5.removeChild(ep5[0]);
     if(dev.length){
       dev.forEach(function(tema,ti){
-        // Title: pStyle=Ttulo2 (estilo del template)
-        var tp=doc.createElementNS(W,'w:p');
-        var tppr=doc.createElementNS(W,'w:pPr');
-        var tps=doc.createElementNS(W,'w:pStyle');
-        tps.setAttribute('w:val','Ttulo2');
-        tppr.appendChild(tps); tp.appendChild(tppr);
-        var tr=doc.createElementNS(W,'w:r');
-        var tt=doc.createElementNS(W,'w:t');
-        tt.textContent=tema.titulo||'';
-        tr.appendChild(tt); tp.appendChild(tr);
-        cell5.appendChild(tp);
+        // Title paragraph with Ttulo2 + keepNext
+var tp = doc.createElementNS(W, 'w:p');
+var tppr = doc.createElementNS(W, 'w:pPr');
+var tps = doc.createElementNS(W, 'w:pStyle');
+tps.setAttribute('w:val', 'Ttulo2');
+tppr.appendChild(tps);
+var kn = doc.createElementNS(W, 'w:keepNext');
+tppr.appendChild(kn);
+tp.appendChild(tppr);
+var tr = doc.createElementNS(W, 'w:r');
+var trpr = doc.createElementNS(W, 'w:rPr');
+var tf = doc.createElementNS(W, 'w:rFonts');
+tf.setAttribute('w:asciiTheme', 'majorHAnsi');
+tf.setAttribute('w:hAnsiTheme', 'majorHAnsi');
+trpr.appendChild(tf);
+tr.appendChild(trpr);
+var tt = doc.createElementNS(W, 'w:t');
+tt.textContent = tema.titulo || '';
+tr.appendChild(tt); tp.appendChild(tr);
+cell5.appendChild(tp);
+
+// Points paragraph with explicit Calibri font
+var puntos = tema.puntos || [];
+if (puntos.length) {
+  var pp = doc.createElementNS(W, 'w:p');
+  puntos.forEach(function(punto, pi) {
+    if (pi > 0) {
+      var brr = doc.createElementNS(W, 'w:r');
+      brr.appendChild(doc.createElementNS(W, 'w:br'));
+      pp.appendChild(brr);
+    }
+    var pr = doc.createElementNS(W, 'w:r');
+    var prpr = doc.createElementNS(W, 'w:rPr');
+    var pf = doc.createElementNS(W, 'w:rFonts');
+    pf.setAttribute('w:asciiTheme', 'minorHAnsi');
+    pf.setAttribute('w:hAnsiTheme', 'minorHAnsi');
+    prpr.appendChild(pf);
+    pr.appendChild(prpr);
+    var pt = doc.createElementNS(W, 'w:t');
+    pt.textContent = '- ' + punto;
+    pt.setAttribute('xml:space', 'preserve');
+    pr.appendChild(pt); pp.appendChild(pr);
+  });
+  cell5.appendChild(pp);
+}
         // Puntos: one paragraph, line breaks between points
         var puntos=tema.puntos||[];
         if(puntos.length){
