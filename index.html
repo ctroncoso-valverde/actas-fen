@@ -999,7 +999,7 @@ function fillTemplateXML(data, docXmlText){
         var tp=doc.createElementNS(W,'w:p');
         var tppr=doc.createElementNS(W,'w:pPr');
         var tps=doc.createElementNS(W,'w:pStyle');
-        tps.setAttributeNS(W,'w:val','Ttulo2');
+        tps.setAttribute('w:val','Ttulo2');
         tppr.appendChild(tps); tp.appendChild(tppr);
         var tr=doc.createElementNS(W,'w:r');
         var tt=doc.createElementNS(W,'w:t');
