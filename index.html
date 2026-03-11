@@ -980,17 +980,11 @@ function fillTemplateXML(data, docXmlText){
   var seg=data.seguimiento_compromisos||[];
   if(seg.length){ seg.forEach(function(s){ t4.appendChild(makeRow(dr4,[s.accion||'',s.responsable||'',s.estado||''])); }); }
   else{ [0,1].forEach(function(){ t4.appendChild(makeRow(dr4,['','',''])); }); }
-// ── T5: Desarrollo ──
+
+  // ── T5: Desarrollo ──
 var t5=tables[5]; var rows5=t5.getElementsByTagNameNS(W,'tr');
 var dr5=rows5[1];
 while(rows5.length>1) t5.removeChild(rows5[rows5.length-1]);
-
-// Add tblHeader to row 0 so it repeats on every page
-var r0trPr=rows5[0].getElementsByTagNameNS(W,'trPr')[0];
-if(!r0trPr){ r0trPr=doc.createElementNS(W,'w:trPr'); rows5[0].insertBefore(r0trPr,rows5[0].firstChild); }
-var tblHdr=doc.createElementNS(W,'w:tblHeader');
-r0trPr.appendChild(tblHdr);
-
 var dev=data.desarrollo||[];
 var dataRow5=dr5.cloneNode(true);
 var clonedTrPr=dataRow5.getElementsByTagNameNS(W,'trPr')[0];
@@ -1002,7 +996,6 @@ if(cells5.length){
   while(ep5.length>0) cell5.removeChild(ep5[0]);
   if(dev.length){
     dev.forEach(function(tema,ti){
-      // Title: Ttulo2
       var tp=doc.createElementNS(W,'w:p');
       var tppr=doc.createElementNS(W,'w:pPr');
       var tps=doc.createElementNS(W,'w:pStyle');
@@ -1016,7 +1009,6 @@ if(cells5.length){
       tt.textContent=tema.titulo||'';
       tr.appendChild(tt); tp.appendChild(tr);
       cell5.appendChild(tp);
-      // Points
       var puntos=tema.puntos||[];
       if(puntos.length){
         var pp=doc.createElementNS(W,'w:p');
@@ -1030,7 +1022,6 @@ if(cells5.length){
         });
         cell5.appendChild(pp);
       }
-      // Spacer
       if(ti<dev.length-1) cell5.appendChild(doc.createElementNS(W,'w:p'));
     });
   } else {
