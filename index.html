@@ -1383,8 +1383,8 @@ function tblDeleteCol(){
 
 function dlBlob(blob,fn){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);}
 function getExportHTML(){
-  // Always build from structured data with fully inline styles — never use _editedHTML
-  // which contains CSS class references that Word cannot resolve.
+  // Use edited HTML if the user made manual changes, otherwise rebuild from data
+  if(curActa._editedHTML) return curActa._editedHTML;
   return curActa.tipo==='CF'?wCF(curActa):wCE(curActa);
 }
 function downloadWord(){
