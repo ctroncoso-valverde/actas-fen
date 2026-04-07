@@ -1389,7 +1389,7 @@ function getExportHTML(){
 }
 function downloadWord(){
   if(!curActa)return;
-  if(curActa.tipo==='CF'){
+  if(curActa.tipo==='CF'&&!curActa._editedHTML){
     downloadCF_docx(curActa);
   } else {
     dlBlob(new Blob(['﻿',getExportHTML()],{type:'application/msword'}),(curActa._baseFilename||'Acta')+'.doc');
@@ -1397,7 +1397,7 @@ function downloadWord(){
 }
 async function saveToFolder(){
   if(!curActa)return;
-  if(curActa.tipo==='CF'){downloadCF_docx(curActa);return;}
+  if(curActa.tipo==='CF'&&!curActa._editedHTML){downloadCF_docx(curActa);return;}
   const fn=(curActa._baseFilename||'Acta')+'.doc';
   const blob=new Blob(['﻿',getExportHTML()],{type:'application/msword'});
   if(FSA&&folderH){try{const fh=await folderH.getFileHandle(fn,{create:true});const w=await fh.createWritable();await w.write(blob);await w.close();showSA('ok','✓ Guardado: '+fn);return;}catch(e){if(e.name==='NotAllowedError'){await selFolder();if(folderH){saveToFolder();return;}}console.warn(e);}}
